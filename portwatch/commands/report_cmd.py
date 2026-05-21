@@ -13,6 +13,25 @@ from portwatch.baseline import load_baseline, baseline_exists
 from portwatch.filter import FilterSet
 
 
+def _load_baseline_if_requested(args: argparse.Namespace, config: Config):
+    """Load the baseline when --diff-baseline is set, or return None.
+
+    Prints an error and returns a sentinel on failure so the caller can
+    propagate a non-zero exit code cleanly.
+    """
+    if not args.diff_baseline:
+        return None, 0
+
+    if not baseline_exists(config.baseline_path):
+        print(
+            "portwatch: no baseline found — run 'portwatch baseline save' first",
+            file=sys.stderr,
+        )
+        return None, 1
+
+    return load_baseline(config.baseline_path), 0
+
+
 def cmd_report(args: argparse.Namespace, config: Optional[Config] = None) -> int:
     """Scan current ports and print a human-readable report.
 
@@ -36,15 +55,9 @@ def cmd_report(args: argparse.Namespace, config: Optional[Config] = None) -> int
         fset = FilterSet(config.filters)
         ports = [p for p in ports if not fset.is_ignored(p)]
 
-    baseline = None
-    if args.diff_baseline:
-        if not baseline_exists(config.baseline_path):
-            print(
-                "portwatch: no baseline found — run 'portwatch baseline save' first",
-                file=sys.stderr,
-            )
-            return 1
-        baseline = load_baseline(config.baseline_path)
+    baseline, rc = _load_baseline_if_requested(args, config)
+    if rc != 0:
+        return rc
 
     print_report(ports, baseline=baseline)
     return 0
