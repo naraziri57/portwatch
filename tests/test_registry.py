@@ -36,6 +36,10 @@ class TestRegisterAll:
         ns = parser.parse_args(["report"])
         assert callable(ns.func)
 
+    def test_func_set_for_baseline(self, parser):
+        ns = parser.parse_args(["baseline", "save"])
+        assert callable(ns.func)
+
 
 class TestDispatch:
     def test_dispatch_calls_func(self):
@@ -49,6 +53,13 @@ class TestDispatch:
         rc = dispatch(ns)
         assert rc == 42
         assert len(mock_called) == 1
+
+    def test_dispatch_passes_namespace_to_func(self):
+        """Ensure dispatch passes the full Namespace object to the handler."""
+        received = []
+        ns = argparse.Namespace(func=lambda args: received.append(args))
+        dispatch(ns)
+        assert received[0] is ns
 
     def test_dispatch_no_func_returns_1(self):
         ns = argparse.Namespace()
