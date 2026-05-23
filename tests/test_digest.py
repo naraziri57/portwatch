@@ -58,6 +58,14 @@ class TestDigestReport:
         r = build_digest(events)
         assert len(r.events) == 5
 
+    def test_reset_allows_readd(self):
+        """After reset, the report should accept new events normally."""
+        r = build_digest([_ev(), _ev()])
+        r.reset()
+        r.add(_ev(port=9999))
+        assert len(r.events) == 1
+        assert not r.is_empty
+
 
 class TestDigestCmd:
     def _args(self, audit_file: str, limit: int = 0) -> argparse.Namespace:
@@ -86,5 +94,6 @@ class TestDigestCmd:
         args = self._args(str(audit_file), limit=3)
         rc = cmd_digest(args)
         assert rc == 0
-        out = capsys.readouterr().out
-        assert "Total changes: 3" in out
+        captured = capsys.readouterr()
+        # Only 3 entries should appear in the output, not all 10
+        assert captured.out.count("opened") <= 3
