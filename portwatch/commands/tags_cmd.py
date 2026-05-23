@@ -13,7 +13,16 @@ from portwatch.tags import TagRule, TagSet
 def _load_tagset(path: str) -> TagSet:
     with open(path) as fh:
         data = json.load(fh)
+    if not isinstance(data, dict):
+        raise ValueError(f"expected a JSON object, got {type(data).__name__}")
     return TagSet.from_dict(data)
+
+
+def _format_entry(entry: PortEntry, tags: set[str]) -> str:
+    """Format a single port entry with its resolved tags for display."""
+    tag_str = ", ".join(sorted(tags)) if tags else "(none)"
+    process = entry.process or "-"
+    return f"{entry.proto}:{entry.port}\t{entry.local_addr}\t{process}\ttags=[{tag_str}]"
 
 
 def cmd_tags(args: argparse.Namespace) -> int:
@@ -38,8 +47,7 @@ def cmd_tags(args: argparse.Namespace) -> int:
 
     for entry in sorted(ports, key=lambda e: (e.proto, e.port)):
         tags = tagset.resolve(entry)
-        tag_str = ", ".join(sorted(tags)) if tags else "(none)"
-        print(f"{entry.proto}:{entry.port}\t{entry.local_addr}\t{entry.process or '-'}\ttags=[{tag_str}]")
+        print(_format_entry(entry, tags))
 
     return 0
 
