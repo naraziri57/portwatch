@@ -59,6 +59,19 @@ class FilterSet:
         """Return entries that are NOT matched by any ignore rule."""
         return [e for e in entries if not self.should_ignore(e)]
 
+    def add_rule(self, rule: FilterRule) -> None:
+        """Add a rule to the set, ignoring exact duplicates."""
+        if rule not in self.rules:
+            self.rules.append(rule)
+
+    def remove_rule(self, rule: FilterRule) -> bool:
+        """Remove a rule from the set. Returns True if it was present, False otherwise."""
+        try:
+            self.rules.remove(rule)
+            return True
+        except ValueError:
+            return False
+
     def save(self, path: Path | str) -> None:
         Path(path).write_text(
             json.dumps([r.to_dict() for r in self.rules], indent=2),
@@ -68,6 +81,8 @@ class FilterSet:
     @classmethod
     def load(cls, path: Path | str) -> "FilterSet":
         raw = json.loads(Path(path).read_text(encoding="utf-8"))
+        if not isinstance(raw, list):
+            raise ValueError(f"Filter config must be a JSON array, got {type(raw).__name__}")
         return cls(rules=[FilterRule.from_dict(d) for d in raw])
 
     @classmethod
