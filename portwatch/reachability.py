@@ -69,3 +69,19 @@ def check_reachability(
 def unreachable_ports(results: List[ReachabilityResult]) -> List[ReachabilityResult]:
     """Filter results to only those that failed the reachability probe."""
     return [r for r in results if not r.reachable]
+
+
+def reachable_ports(results: List[ReachabilityResult]) -> List[ReachabilityResult]:
+    """Filter results to only those that passed the reachability probe."""
+    return [r for r in results if r.reachable]
+
+
+def summary(results: List[ReachabilityResult]) -> str:
+    """Return a short human-readable summary of probe results.
+
+    Example: "5 probed, 4 reachable, 1 unreachable"
+    """
+    total = len(results)
+    ok = sum(1 for r in results if r.reachable)
+    fail = total - ok
+    return f"{total} probed, {ok} reachable, {fail} unreachable"
